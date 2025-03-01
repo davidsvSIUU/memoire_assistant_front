@@ -6,6 +6,7 @@ const ChatbotPage = () => {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState(null);
   const messagesEndRef = useRef(null);
   
   const domainInfo = {
@@ -82,6 +83,39 @@ const ChatbotPage = () => {
     
     resetConversation();
   }, [domain]);
+  
+  // Test de connexion au backend
+  const testBackendConnection = async () => {
+    setConnectionStatus('testing');
+    try {
+      // Test de connexion à l'endpoint de test
+      const response = await fetch('http://localhost:5000/test', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setConnectionStatus({
+          status: 'success',
+          message: 'Connexion au serveur établie avec succès!'
+        });
+      } else {
+        setConnectionStatus({
+          status: 'error',
+          message: `Erreur de connexion: ${data.error || 'Erreur inconnue'}`
+        });
+      }
+    } catch (error) {
+      setConnectionStatus({
+        status: 'error',
+        message: `Erreur de connexion: ${error.message}. Vérifiez que le serveur est démarré sur http://localhost:5000`
+      });
+    }
+  };
   
   // Fonction pour ajouter des suggestions rapides spécifiques au domaine
   const addQuickSuggestions = () => {
@@ -242,6 +276,15 @@ const ChatbotPage = () => {
             </svg>
             Retour à l'accueil
           </Link>
+          <button 
+            onClick={testBackendConnection}
+            className="text-gray-400 hover:text-white ml-4 flex items-center transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+            </svg>
+            Tester la connexion
+          </button>
         </div>
         <h1 className={`text-3xl font-bold bg-gradient-to-r ${currentDomain.color} bg-clip-text text-transparent mb-2`}>
           Assistant Mémoire: {currentDomain.title}
@@ -302,6 +345,28 @@ const ChatbotPage = () => {
               </div>
             </div>
           ))}
+          
+          {connectionStatus && (
+            <div className={`p-3 mx-auto my-2 rounded-lg text-sm max-w-md ${
+              connectionStatus.status === 'success' 
+                ? 'bg-green-800 bg-opacity-50 text-green-100' 
+                : connectionStatus.status === 'error'
+                  ? 'bg-red-800 bg-opacity-50 text-red-100'
+                  : 'bg-gray-700 text-gray-200'
+            }`}>
+              {connectionStatus === 'testing' ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
+                  <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-100"></div>
+                  <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-200"></div>
+                  <span>Test de connexion en cours...</span>
+                </div>
+              ) : (
+                <p>{connectionStatus.message}</p>
+              )}
+            </div>
+          )}
+          
           <div ref={messagesEndRef} />
         </div>
         
@@ -317,6 +382,14 @@ const ChatbotPage = () => {
               className="flex-grow bg-gray-700 text-white rounded-l-lg px-4 py-3 focus:outline-none"
               disabled={isLoading}
             />
+            <button
+              type="button"
+              onClick={testBackendConnection}
+              className="bg-gray-600 text-white rounded-md px-4 py-2 mr-2 hover:bg-gray-500 transition-all"
+              disabled={isLoading || connectionStatus === 'testing'}
+            >
+              Tester
+            </button>
             <button
               type="submit"
               className={`bg-gradient-to-r ${currentDomain.color} text-white rounded-r-lg px-6 py-3 transition-all ${
